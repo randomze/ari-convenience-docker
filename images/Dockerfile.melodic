@@ -1,0 +1,50 @@
+# Source the correct base image
+FROM osrf/ros:melodic-desktop-full
+
+## Set up the arguments that we need to build the image
+
+# Arguments for the user of the container - these options have to be passed when building the image
+ARG USERNAME
+ARG USERID
+ARG GROUPID
+
+## Install necessary software to build packages
+RUN apt-get update && apt-get install -y \
+    python-rosdep \
+    python-rosinstall \
+    python-rosinstall-generator \
+    python-wstool \
+    python-rosdep \
+    build-essential
+
+## Install software that is useful
+RUN apt-get update && apt-get install -y \
+    nano \
+    vim \
+    git
+
+## Setup the users
+
+# Properly setup the root password so that we have control to log in
+RUN echo "root:root" | chpasswd
+
+# Create the user and set it up
+RUN groupadd -g $GROUPID -o $USERNAME
+RUN useradd -m -u $USERID -g $GROUPID -o -s /bin/bash $USERNAME
+RUN echo "$USERNAME:passwd" | chpasswd
+RUN adduser $USERNAME sudo
+
+## Setup the entrypoint
+RUN echo "source /opt/ros/melodic/setup.bash" >> /home/$USERNAME/.bashrc
+RUN echo "PS1=\"(melodic) \$PS1\"" >> /home/$USERNAME/.bashrc
+
+# Change to the user to run non-root tasks
+USER $USERNAME
+
+# Update rosdep now that we are not in root
+RUN rosdep update
+
+# Setup the workspace
+WORKDIR "/home/$USERNAME"
+RUN mkdir -p catkin_ws/src
+RUN mkdir bridge

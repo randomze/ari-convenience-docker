@@ -1,0 +1,43 @@
+create_image() {
+    ROS_VERSION=$1
+    SCRIPT_PATH=$(cd "$(dirname ${BASH_SOURCE[0]})"; pwd -P)
+    if [ "$(docker images | grep rpl-hackathon2024-$ROS_VERSION)" ]; then
+        docker rmi rpl-hackathon2024-$ROS_VERSION
+    fi
+    docker build -t rpl-hackathon2024-$ROS_VERSION --build-arg USERNAME=$USER --build-arg USERID=$UID --build-arg GROUPID=$(id -g) - < $SCRIPT_PATH/images/Dockerfile.$ROS_VERSION
+}
+
+start_container () {
+    ROS_VERSION=$1
+    if [ ! "$(docker ps | grep rpl-hackathon2024-container-$ROS_VERSION)" ]; then
+        docker start rpl-hackathon2024-container-$ROS_VERSION
+    fi
+}
+
+close_container () {
+    ROS_VERSION=$1
+    docker stop rpl-hackathon2024-container-$ROS_VERSION
+}
+
+open_terminal () {
+    ROS_VERSION=$1
+    xhost +
+    docker exec -it rpl-hackathon2024-container-$ROS_VERSION /bin/bash
+}
+
+make_container () {
+    ROS_VERSION=$1
+    SOURCE_FOLDER=$2
+    BRIDGE_FOLDER=$3
+    create_image $ROS_VERSION
+    docker run --net=host -i -t -d -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v $SOURCE_FOLDER:/home/$USER/catkin_ws/src -v $BRIDGE_FOLDER:/home/$USER/bridge --name rpl-hackathon2024-container-$ROS_VERSION rpl-hackathon2024-$ROS_VERSION /bin/bash
+    close_container $ROS_VERSION
+}
+
+delete_container () {
+    ROS_VERSION=$1
+    if [ "$(docker ps | grep rpl-hackathon2024-container-$ROS_VERSION)" ]; then
+        close_container $ROS_VERSION
+    fi
+    docker rm rpl-hackathon2024-container-$ROS_VERSION
+}
