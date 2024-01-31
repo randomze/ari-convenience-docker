@@ -46,7 +46,15 @@ To stop a container, run:
 ```
 close_container noetic
 ```
+You only have to run `make_container` the first time (minus if your container gets ruined, more on that later). From then on, to start it up again just run `start_container`:
+```
+start_container noetic
+open_terminal noetic
+```
 
+**SUPER MEGA WARNING**: The connection between the `src` folders and the `bridge` folders in your computer and in your container is total. **Any** change you make, regardless of it's on the container or your computer, happens on both. Something you delete is gone from both sides.
+
+### CUDA/Torch/Python versions/etc. went wrong
 If you've irreparably damaged your container by installing/uninstalling things you don't really want, you can delete it and create a new one:
 ```
 delete_container noetic
