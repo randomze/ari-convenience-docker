@@ -4,7 +4,7 @@ create_image() {
     if [ "$(docker images | grep rpl-hackathon2024-$ROS_VERSION)" ]; then
         docker rmi rpl-hackathon2024-$ROS_VERSION
     fi
-    docker build -t rpl-hackathon2024-$ROS_VERSION --build-arg USERNAME=$USER --build-arg USERID=$UID --build-arg GROUPID=$(id -g) - < $SCRIPT_PATH/images/Dockerfile.$ROS_VERSION
+    docker build -t rpl-hackathon2024-$ROS_VERSION --build-arg USERNAME=$USER --build-arg USERID=$UID --build-arg GROUPID=$(id -g) -f $SCRIPT_PATH/images/Dockerfile.$ROS_VERSION $SCRIPT_PATH/images
 }
 
 start_container () {

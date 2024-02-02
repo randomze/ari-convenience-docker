@@ -37,6 +37,8 @@ RUN adduser $USERNAME sudo
 ## Setup the entrypoint
 RUN echo "source /opt/ros/kinetic/setup.bash" >> /home/$USERNAME/.bashrc
 RUN echo "PS1=\"(kinetic) \$PS1\"" >> /home/$USERNAME/.bashrc
+RUN echo "source .bash_convenience" >> /home/$USERNAME/.bashrc
+COPY bash_convenience /home/$USERNAME/.bash_convenience
 
 # Change to the user to run non-root tasks
 USER $USERNAME

@@ -63,10 +63,43 @@ make_container noetic ~/noetic-container/src ~/noetic-container/bridge
 
 **WARNING**: Only the folders `catkin_ws/src` and `bridge` are safe, since mounted outside the container. Anything else that is not in these folders is lost by deleting the container, so be careful when doing this that you've saved everything you don't want to lose in one of these folders.
 
+## Configure your hosts file
+
+To make life easier for you, add the following to the `/etc/hosts` file in *YOUR* computer, not inside any of the containers:
+```
+192.168.100.177 Gimli
+192.168.100.179 aragorn
+192.168.100.142 arrakis
+192.168.100.42  ari-30c
+```
+
+You have to edit the file with sudo, so open the file with something like:
+```
+gksudo gedit /etc/hosts
+```
+
+## ROS Master or Slave
+
+Once inside the container, you can easily change between being a ROS Master and a ROS Slave. To make the terminal you're in behave as if the ROS Master is running in your computer (might be in another container, doesn't necessarily have to be the one you are running this in), run:
+```
+(noetic) hackathon@arrakis$ ros_master
+```
+
+If you want the terminal you're in to behave as a slave to some ROS Master, run:
+```
+(noetic) hackathon@arrakis$ ros_slave MASTER_IP
+```
+
+For the hackathon the masters will likely either be the ARI or the YuMi's control computer, which both have hostnames. This means you can do it like this, if you have configured your hosts file (look above):
+```
+(noetic) hackathon@arrakis$ ros_slave ari-30c # For the ARI team
+(noetic) hackathon@arrakis$ ros_slave Gimli # For the YuMi team
+```
+
 ## What's in the container
 
 ROS and little else. I made sure there's also a text editor (nano/vim) and git. Things you should install yourself via `apt`. If you run a sudo command, the password is `passwd`. If you find yourself in the root user for some reason, the password is `root`.
 
 ## What's missing?
 
-I still haven't added the niceties to be able to quickly switch between a ROS Master and ROS Slave setup. Once I've set up the static IP's of the ROS Masters I will update the Docker images. However, this means making new containers, so **if you have annoying to setup things, like CUDA/Torch/etc.** talk to me first please.
+Graphics only work with X11 and if you have Wayland the comands break. If you get an error with something related to `/tmp/.X11`, talk to me.
