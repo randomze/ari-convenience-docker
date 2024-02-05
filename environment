@@ -22,7 +22,7 @@ close_container () {
 open_terminal () {
     ROS_VERSION=$1
     xhost +
-    docker exec -it rpl-hackathon2024-container-$ROS_VERSION /bin/bash
+    docker exec -it rpl-hackathon2024-container-$ROS_VERSION env TERM=xterm-256color /bin/bash
 }
 
 make_container () {
