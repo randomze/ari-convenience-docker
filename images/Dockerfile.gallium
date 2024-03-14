@@ -38,7 +38,7 @@ RUN echo "$USERNAME:passwd" | chpasswd
 RUN adduser $USERNAME sudo
 
 ## Setup the entrypoint
-RUN echo "source /opt/ros/noetic/setup.bash" >> /home/$USERNAME/.bashrc
+RUN echo "source /opt/pal/gallium/setup.bash" >> /home/$USERNAME/.bashrc
 RUN echo "PS1=\"(gallium) \$PS1\"" >> /home/$USERNAME/.bashrc
 RUN echo "source .bash_convenience" >> /home/$USERNAME/.bashrc
 COPY bash_convenience /home/$USERNAME/.bash_convenience
