@@ -8,36 +8,37 @@ create_image() {
 }
 
 start_container () {
-    ROS_VERSION=$1
-    if [ ! "$(docker ps | grep rpl-hackathon2024-container-$ROS_VERSION)" ]; then
-        docker start rpl-hackathon2024-container-$ROS_VERSION
+    CONTAINER_NAME=$1
+    if [ ! "$(docker ps | grep $CONTAINER_NAME)" ]; then
+        docker start $CONTAINER_NAME
     fi
 }
 
 close_container () {
-    ROS_VERSION=$1
-    docker stop rpl-hackathon2024-container-$ROS_VERSION
+    CONTAINER_NAME=$1
+    docker stop $CONTAINER_NAME
 }
 
 open_terminal () {
-    ROS_VERSION=$1
+    CONTAINER_NAME=$1
     xhost +
-    docker exec -it rpl-hackathon2024-container-$ROS_VERSION env TERM=xterm-256color /bin/bash
+    docker exec -it $CONTAINER_NAME env TERM=xterm-256color /bin/bash
 }
 
 make_container () {
     ROS_VERSION=$1
-    SOURCE_FOLDER=$2
-    BRIDGE_FOLDER=$3
+    CONTAINER_NAME=$2
+    SOURCE_FOLDER=$3
+    BRIDGE_FOLDER=$4
     create_image $ROS_VERSION
-    docker run --net=host -i -t -d -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v $SOURCE_FOLDER:/home/$USER/catkin_ws/src -v $BRIDGE_FOLDER:/home/$USER/bridge --name rpl-hackathon2024-container-$ROS_VERSION rpl-hackathon2024-$ROS_VERSION /bin/bash
-    close_container $ROS_VERSION
+    docker run --runtime=nvidia --gpus=all --net=host -i -t -d -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v $SOURCE_FOLDER:/home/$USER/catkin_ws/src -v $BRIDGE_FOLDER:/home/$USER/bridge --name $CONTAINER_NAME rpl-hackathon2024-$ROS_VERSION /bin/bash
+    close_container $CONTAINER_NAME
 }
 
 delete_container () {
-    ROS_VERSION=$1
-    if [ "$(docker ps | grep rpl-hackathon2024-container-$ROS_VERSION)" ]; then
-        close_container $ROS_VERSION
+    CONTAINER_NAME=$1
+    if [ "$(docker ps | grep $CONTAINER_NAME)" ]; then
+        close_container $CONTAINER_NAME
     fi
-    docker rm rpl-hackathon2024-container-$ROS_VERSION
+    docker rm $CONTAINER_NAME
 }

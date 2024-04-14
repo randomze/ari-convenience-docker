@@ -1,6 +1,9 @@
 # Source the correct base image
 FROM registry.gitlab.com/pal-robotics/ari-0622/dockers/pal-gallium-pal-metapkg-development-ari-30-dev
 
+# Configure NVIDIA things
+ENV NVIDIA_DRIVER_CAPABILITIES=all
+
 ## Set up the arguments that we need to build the image
 
 # Arguments for the user of the container - these options have to be passed when building the image

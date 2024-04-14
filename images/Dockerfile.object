@@ -1,0 +1,26 @@
+FROM rpl-hackathon2024-gallium:latest
+
+# Arguments for the user of the container - these options have to be passed when building the image
+ARG USERNAME
+ARG USERID
+ARG GROUPID
+
+USER root
+
+RUN apt-get update && apt-get install -y \
+    python3-catkin-tools \
+    python3-pip \
+    python3-tk
+
+USER $USERNAME
+
+RUN pip3 install --upgrade numpy
+RUN pip3 install \
+    torch \
+    torchvision \
+    pandas \
+    requests \
+    IPython \
+    tqdm \
+    seaborn \
+    scipy
