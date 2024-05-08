@@ -1,6 +1,8 @@
 # Source the correct base image
 FROM registry.gitlab.com/pal-robotics/ari-0622/dockers/pal-gallium-pal-metapkg-development-ari-30-dev
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Configure NVIDIA things
 ENV NVIDIA_DRIVER_CAPABILITIES=all
 
@@ -12,7 +14,7 @@ ARG USERID
 ARG GROUPID
 
 ## Install necessary software to build packages
-RUN apt-get update && apt-get install -y \
+RUN apt update && apt install -y \
     python3-rosdep \
     python3-rosinstall \
     python3-rosinstall-generator \
@@ -21,10 +23,18 @@ RUN apt-get update && apt-get install -y \
     build-essential
 
 ## Install software that is useful
-RUN apt-get update && apt-get install -y \
+RUN apt update && apt install -y \
     nano \
     vim \
     git
+
+## Install ROS dependencies for sw stack
+RUN apt install -y \
+    ros-noetic-hri \
+    ros-noetic-hri-msgs \
+    ros-noetic-hri-rviz \
+    ros-noetic-human-description \
+    ros-noetic-pyhri
 
 RUN rosdep init
 
@@ -36,7 +46,7 @@ RUN echo "root:root" | chpasswd
 # Create the user and set it up
 RUN userdel user
 RUN groupadd -g $GROUPID -o $USERNAME
-RUN useradd -m -u $USERID -g $GROUPID -o -s /bin/bash $USERNAME
+RUN useradd -l -m -u $USERID -g $GROUPID -o -s /bin/bash $USERNAME
 RUN echo "$USERNAME:passwd" | chpasswd
 RUN adduser $USERNAME sudo
 
@@ -45,6 +55,7 @@ RUN echo "source /opt/pal/gallium/setup.bash" >> /home/$USERNAME/.bashrc
 RUN echo "PS1=\"(gallium) \$PS1\"" >> /home/$USERNAME/.bashrc
 RUN echo "source .bash_convenience" >> /home/$USERNAME/.bashrc
 COPY bash_convenience /home/$USERNAME/.bash_convenience
+RUN chown $USERNAME /home/$USERNAME/.bash_convenience
 
 # Change to the user to run non-root tasks
 USER $USERNAME

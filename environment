@@ -1,5 +1,6 @@
-create_image() {
-    ROS_VERSION=$1
+ari_create_image() {
+    #ROS_VERSION=$1
+    ROS_VERSION=gallium
     SCRIPT_PATH=$(cd "$(dirname ${BASH_SOURCE[0]})"; pwd -P)
     if [ "$(docker images | grep rpl-hackathon2024-$ROS_VERSION)" ]; then
         docker rmi rpl-hackathon2024-$ROS_VERSION
@@ -7,38 +8,47 @@ create_image() {
     docker build -t rpl-hackathon2024-$ROS_VERSION --build-arg USERNAME=$USER --build-arg USERID=$UID --build-arg GROUPID=$(id -g) -f $SCRIPT_PATH/images/Dockerfile.$ROS_VERSION $SCRIPT_PATH/images
 }
 
-start_container () {
-    CONTAINER_NAME=$1
+ari_start_container () {
+    #CONTAINER_NAME=$1
+    CONTAINER_NAME=ari-dev
     if [ ! "$(docker ps | grep $CONTAINER_NAME)" ]; then
         docker start $CONTAINER_NAME
     fi
 }
 
-close_container () {
-    CONTAINER_NAME=$1
+ari_stop_container () {
+    #CONTAINER_NAME=$1
+    CONTAINER_NAME=ari-dev
     docker stop $CONTAINER_NAME
 }
 
-open_terminal () {
-    CONTAINER_NAME=$1
+ari_open_terminal () {
+    #CONTAINER_NAME=$1
+    CONTAINER_NAME=ari-dev
     xhost +
     docker exec -it $CONTAINER_NAME env TERM=xterm-256color /bin/bash
 }
 
-make_container () {
-    ROS_VERSION=$1
-    CONTAINER_NAME=$2
-    SOURCE_FOLDER=$3
-    BRIDGE_FOLDER=$4
-    create_image $ROS_VERSION
+## arg 1 is src folder on host, arg2 is shared folder on host
+ari_make_container () {
+    #ROS_VERSION=$1
+    ROS_VERSION=gallium
+    #CONTAINER_NAME=$2
+    CONTAINER_NAME=ari-dev
+    #SOURCE_FOLDER=$3
+    SOURCE_FOLDER=$1
+    #BRIDGE_FOLDER=$4
+    BRIDGE_FOLDER=$2
+    ari_create_image $ROS_VERSION
     docker run --runtime=nvidia --gpus=all --net=host -i -t -d -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v $SOURCE_FOLDER:/home/$USER/catkin_ws/src -v $BRIDGE_FOLDER:/home/$USER/bridge --name $CONTAINER_NAME rpl-hackathon2024-$ROS_VERSION /bin/bash
-    close_container $CONTAINER_NAME
+    ari_stop_container $CONTAINER_NAME
 }
 
-delete_container () {
-    CONTAINER_NAME=$1
+ari_delete_container () {
+    #CONTAINER_NAME=$1
+    CONTAINER_NAME=ari-dev
     if [ "$(docker ps | grep $CONTAINER_NAME)" ]; then
-        close_container $CONTAINER_NAME
+        ari_stop_container $CONTAINER_NAME
     fi
     docker rm $CONTAINER_NAME
 }
