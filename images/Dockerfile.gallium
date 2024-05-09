@@ -28,13 +28,19 @@ RUN apt update && apt install -y \
     vim \
     git
 
-## Install ROS dependencies for sw stack
+## Install dependencies for sw stack (this should move to a script)
 RUN apt install -y \
     ros-noetic-hri \
     ros-noetic-hri-msgs \
     ros-noetic-hri-rviz \
     ros-noetic-human-description \
-    ros-noetic-pyhri
+    ros-noetic-pyhri \
+    python -m pip \
+    python3-tk \
+    pal-gallium-pal-presentation-msgs
+
+## Install python dependencies (this should move to a script)
+RUN pip3 install py_trees ikpy google-api-python-client mediapipe
 
 RUN rosdep init
 

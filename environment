@@ -40,7 +40,12 @@ ari_make_container () {
     #BRIDGE_FOLDER=$4
     BRIDGE_FOLDER=$2
     ari_create_image $ROS_VERSION
-    docker run --runtime=nvidia --gpus=all --net=host -i -t -d -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v $SOURCE_FOLDER:/home/$USER/catkin_ws/src -v $BRIDGE_FOLDER:/home/$USER/bridge --name $CONTAINER_NAME rpl-hackathon2024-$ROS_VERSION /bin/bash
+    docker run --runtime=nvidia --gpus=all --net=host -i -t -d \
+        -e DISPLAY \
+        -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+        -v $SOURCE_FOLDER:/home/$USER/catkin_ws/src \
+        -v $BRIDGE_FOLDER:/home/$USER/bridge \
+        --name $CONTAINER_NAME rpl-hackathon2024-$ROS_VERSION /bin/bash
     ari_stop_container $CONTAINER_NAME
 }
 
@@ -52,3 +57,17 @@ ari_delete_container () {
     fi
     docker rm $CONTAINER_NAME
 }
+
+## Usage:  topp ./myprog
+## Options:
+##   T=0.5 topp ./myprog: change-poll interval
+##   O=1 topp ./myprog: don't hide program stdout/stderr. 
+##                      This can be useful to help correlate at which point memory usage bursts with stdout.
+topp() (
+  $* &>/dev/null &
+  pid="$!"
+  trap exit SIGINT
+  i=1
+  top -b n1 -d "${T:-0.1}" -n1 -p "$pid"
+  while true; do top -b n1 -d "${T:-0.1}" -n1 -p "$pid"  | tail -1; printf "$i "; i=$(($i + 1)); done
+)
