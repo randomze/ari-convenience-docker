@@ -1,105 +1,108 @@
-# "Easy" Docker Containers
+# "Easy" Docker Containers for the ARI
 
-This repository contains a script to help make it easier creating dockerized environments that come preloaded with ROS and some other niceties so that we get to the fun part ASAP.
+This repository contains some helper commands to make getting the ARI development containers up-and-running a bit easier.
+It is targeted at Ubuntu and Bash (if you're using Ubuntu and don't know whether you're running bash, you almost surely are).
 
-Since I don't know what we'll need it supports multiple versions of ROS:
-- kinetic
-- lunar
-- melodic
-- noetic
+## Prerequisites
 
-Also, the images aren't stable yet so if you're going to be running hard to setup environments, with things like Cuda/Torch/etc., come talk to me first.
+Since PAL provides Docker images for the ARI, you need to install Docker. Follow the guide you can find [here](https://docs.docker.com/engine/install/).
+Access to the PAL Docker images requires a Gitlab account which has access to their registry. Contact the ARI responsibles for this.
 
-This is all aimed at Linux. Probably Ubuntu, since that's what I tested[^*].
+### Using the GPU
 
-[^*]: I haven't been able to test that graphics forwarding, like Rviz works yet.
+If you have an Nvidia GPU, which is recommendable, you also need to install the Nvidia Container Toolkit. Follow the guide [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 
-## How to use this
+## Setup
 
-Clone the repository:
-```
-git clone https://github.com/randomze/hackathon-docker.git
-```
+The commands are made available by sourcing the `environment` file. You can either do this manually every time you want to use it, by running `source ./environment`, or add it to your `.bashrc`:
 
-Then you can add the environment script to your `.bashrc` so that the commands are always available as soon as open a terminal by doing:
-```
-cd hackathon-docker
+```bash
 echo "source $(pwd)/environment" >> ~/.bashrc
 ```
 
-Close & open a new terminal. The main idea now is that you can create one container for each version of ROS. Each containers will mount one of your folders to the `src` folder of a catkin workspace and another of your folders to a folder I call `bridge` so that you can move files in and out of the container easily.
+## Containers
 
-I suggest you try this out by running (I'm using noetic here, but just change it for the other ones if that's what you need):
-```
-cd ~
-mkdir -p noetic-container/src noetic-container/bridge
-make_container noetic ~/noetic-container/src ~/noetic-container/bridge
-start_container noetic
-open_terminal noetic
-```
+PAL provides a custom image for the ARI, called `gallium`, that is a customized version of `noetic`. Furthermore, several "normal" ROS images can also be used.
+Whenever a command calls for an image, the following options are allowed:
 
-Now you'll be in a terminal inside your noetic container. If you need more terminals, just open more terminals and run `open_terminal noetic`. Anything you do to the `catkin_ws/src` and `bridge` folders in the containers is also always available to you in your own folders `noetic-container/src` and `noetic-container/bridge`, so you can run your editor of choice outside the Docker and just use the terminals to compile things.
+- `gallium`
+- `noetic`
+- `melodic`
+- `kinetic`
+- `lunar`
 
-If you want to connect your editor to the container for something like debugging, I can vouch for VSCode for Python. Guide for setup is [here](https://code.visualstudio.com/docs/devcontainers/tutorial).
+The containers mount a source folder, that should be set to what should be contained in the ROS workspace, to the directory `~/catkin_ws/src` in the container.
+They also mountain a bridge folder, used to transfer data in/out of the container, in the `~/bridge` directory in the container.
 
-To stop a container, run:
-```
-close_container noetic
-```
-You only have to run `make_container` the first time (minus if your container gets ruined, more on that later). From then on, to start it up again just run `start_container`:
-```
-start_container noetic
-open_terminal noetic
-```
+These folder mounts are synchronized with the folders you point them towards on your own computer.
+This is quite useful for development, but keep in mind that any change to those folders on the container will be mirrored on the original folders, i.e., deleting things is permanent.
 
-**SUPER MEGA WARNING**: The connection between the `src` folders and the `bridge` folders in your computer and in your container is total. **Any** change you make, regardless of it's on the container or your computer, happens on both. Something you delete is gone from both sides.
+### Creating containers
 
-### CUDA/Torch/Python versions/etc. went wrong
-If you've irreparably damaged your container by installing/uninstalling things you don't really want, you can delete it and create a new one:
-```
-delete_container noetic
-make_container noetic ~/noetic-container/src ~/noetic-container/bridge
+A container is created through the command:
+
+```bash
+make_container <image> <name> <src_folder> <bridge_folder>
+
+# example command
+make_container gallium gallium-container ~/src ~/bridge
 ```
 
-**WARNING**: Only the folders `catkin_ws/src` and `bridge` are safe, since mounted outside the container. Anything else that is not in these folders is lost by deleting the container, so be careful when doing this that you've saved everything you don't want to lose in one of these folders.
+The `src_folder` and `bridge_folder` must point to existing folders.
+Containers must be started after being created.
 
-## Configure your hosts file
+### Starting and stopping containers
 
-To make life easier for you, add the following to the `/etc/hosts` file in *YOUR* computer, not inside any of the containers:
-```
-192.168.100.177 Gimli
-192.168.100.179 aragorn
-192.168.100.142 arrakis
-192.168.100.42  ari-30c
+Containers are started and stopped by their name:
+
+```bash
+start_container <name>
+stop_container <name>
+
+# Examples
+start_container gallium-container
+stop_container gallium-container
 ```
 
-You have to edit the file with sudo, so open the file with something like:
+### Using the containers
+
+There are two ways to use the containers: interactively and running a command.
+
+To get a terminal shell in the container, run:
+
+```bash
+open_terminal <name>
+
+# Example
+open_terminal gallium-container
 ```
-gksudo gedit /etc/hosts
+
+To simply run a command on the container, without attaching to a shell, run:
+
+```bash
+run_command <name> <command>
+
+# Example
+run_command gallium-container echo "Hello World"
 ```
 
 ## ROS Master or Slave
 
-Once inside the container, you can easily change between being a ROS Master and a ROS Slave. To make the terminal you're in behave as if the ROS Master is running in your computer (might be in another container, doesn't necessarily have to be the one you are running this in), run:
-```
-(noetic) hackathon@arrakis$ ros_master
+The containers have some convenience ROS commands.
+Once inside the container, you can easily change between being a ROS Master and a ROS Slave. To make the terminal you're in behave as if the ROS Master is running in your computer, run:
+
+```bash
+ros_master
 ```
 
 If you want the terminal you're in to behave as a slave to some ROS Master, run:
-```
-(noetic) hackathon@arrakis$ ros_slave MASTER_IP
-```
 
-For the hackathon the masters will likely either be the ARI or the YuMi's control computer, which both have hostnames. This means you can do it like this, if you have configured your hosts file (look above):
+```bash
+ros_slave <ROS_MASTER_IP>
 ```
-(noetic) hackathon@arrakis$ ros_slave ari-30c # For the ARI team
-(noetic) hackathon@arrakis$ ros_slave Gimli # For the YuMi team
-```
-
-## What's in the container
-
-ROS and little else. I made sure there's also a text editor (nano/vim) and git. Things you should install yourself via `apt`. If you run a sudo command, the password is `passwd`. If you find yourself in the root user for some reason, the password is `root`.
 
 ## What's missing?
 
-Graphics only work with X11 and if you have Wayland the comands break. If you get an error with something related to `/tmp/.X11`, talk to me.
+Tons of things probably.
+Graphics only work with X11 and if you have Wayland the commands break.
+
