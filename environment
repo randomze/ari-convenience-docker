@@ -4,7 +4,11 @@ create_image() {
     if [ "$(docker images | grep ari-$ROS_VERSION)" ]; then
         docker rmi ari-$ROS_VERSION
     fi
-    docker build -t ari-$ROS_VERSION --build-arg USERNAME=$USER --build-arg USERID=$UID --build-arg GROUPID=$(id -g) -f $SCRIPT_PATH/images/Dockerfile.$ROS_VERSION $SCRIPT_PATH/images
+
+    # Providing some extract flexibility for reasons
+    IMAGES_DIRECTORY=${2:-"$SCRIPT_PATH/images"}
+    echo "Building image for $ROS_VERSION with IMAGES_DIRECTORY=$IMAGES_DIRECTORY"
+    docker build -t ari-$ROS_VERSION --build-arg USERNAME=$USER --build-arg USERID=$UID --build-arg GROUPID=$(id -g) -f $IMAGES_DIRECTORY/Dockerfile.$ROS_VERSION $IMAGES_DIRECTORY
 }
 
 start_container () {
@@ -27,7 +31,7 @@ open_terminal () {
 
 run_command () {
     CONTAINER_NAME=$1
-    docker exec $CONTAINER_NAME ${@:2}
+    docker exec -t $CONTAINER_NAME "${@:2}"
 }
 
 make_container () {
@@ -35,15 +39,69 @@ make_container () {
     CONTAINER_NAME=$2
     SOURCE_FOLDER=$3
     BRIDGE_FOLDER=$4
-    create_image $ROS_VERSION
 
-    GPU_STRING=""
-    if [ $(nvidia-smi) -eq 0 ]; then
-        GPU_STRING="--gpus=all"
+    if [ "$(docker ps -a | grep $CONTAINER_NAME)" ]; then
+        echo "$CONTAINER_NAME container already exists. Skipping creation."
+        echo "If you wish to create a new container, manually run 'delete_container $CONTAINER_NAME'"
+    else
+        GPU_STRING=""
+        if nvidia-smi ; then
+            GPU_STRING="--gpus=all"
+        fi
+
+        if [ "$(docker images | grep ari-$ROS_VERSION)" ]; then
+            echo "Image for this container already exists."
+            echo "If you wish for it to be rebuilt, manually delete it with 'docker rmi ari-$ROS_VERSION'"
+        else
+            create_image $ROS_VERSION
+        fi
+        docker run $GPU_STRING --net=host -i -t -d -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v $SOURCE_FOLDER:/home/$USER/catkin_ws/src -v $BRIDGE_FOLDER:/home/$USER/bridge --name $CONTAINER_NAME ari-$ROS_VERSION /bin/bash
+        close_container $CONTAINER_NAME
     fi
+}
 
-    docker run $GPU_STRING --net=host -i -t -d -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v $SOURCE_FOLDER:/home/$USER/catkin_ws/src -v $BRIDGE_FOLDER:/home/$USER/bridge --name $CONTAINER_NAME ari-$ROS_VERSION /bin/bash
-    close_container $CONTAINER_NAME
+# Unadvertised version for manually doing things
+make_container_adv () {
+    ROS_VERSION=$1
+    CONTAINER_NAME=$2
+
+    if [ "$(docker ps -a | grep $CONTAINER_NAME)" ]; then
+        echo "$CONTAINER_NAME container already exists. Skipping creation."
+        echo "If you wish to create a new container, manually run 'delete_container $CONTAINER_NAME'"
+    else
+        GPU_STRING=""
+        if nvidia-smi ; then
+            GPU_STRING="--gpus=all"
+        fi
+
+        ERROR=0
+        MOUNTS_STRING=""
+
+        for j in $(seq 3 2 $#); do
+           eval "source_folder=\${$j}"
+           eval "target_folder=\${$((j+1))}"
+
+           if [[ $target_folder == "" ]]; then
+              echo "Must specify target_folder"
+              ERROR=1
+           fi
+
+           MOUNTS_STRING="$MOUNTS_STRING -v $source_folder:$target_folder"
+        done
+        
+        if [[ $ERROR == 1 ]] ; then
+           return
+        fi
+
+        if [ "$(docker images | grep ari-$ROS_VERSION)" ]; then
+            echo "Image for this container already exists."
+            echo "If you wish for it to be rebuilt, manually delete it with 'docker rmi ari-$ROS_VERSION'"
+        else
+            create_image $ROS_VERSION
+        fi
+        docker run $GPU_STRING --net=host -i -t -d -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix $MOUNTS_STRING --name $CONTAINER_NAME ari-$ROS_VERSION /bin/bash
+        close_container $CONTAINER_NAME
+    fi
 }
 
 delete_container () {

@@ -13,18 +13,19 @@ ARG GROUPID
 
 ## Install necessary software to build packages
 RUN apt-get update && apt-get install -y \
-    python3-rosdep \
-    python3-rosinstall \
-    python3-rosinstall-generator \
-    python3-wstool \
-    python3-rosdep \
-    build-essential
+  python3-rosdep \
+  python3-rosinstall \
+  python3-rosinstall-generator \
+  python3-wstool \
+  python3-rosdep \
+  python3-pip \
+  build-essential
 
 ## Install software that is useful
 RUN apt-get update && apt-get install -y \
-    nano \
-    vim \
-    git
+  nano \
+  vim \
+  git
 
 RUN rosdep init
 
